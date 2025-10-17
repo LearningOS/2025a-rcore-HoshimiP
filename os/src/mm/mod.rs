@@ -29,6 +29,7 @@ pub fn init() {
     frame_allocator::init_frame_allocator();
     KERNEL_SPACE.exclusive_access().activate();
 }
+/// 判断给定虚拟地址是否为用户态可写
 pub fn is_user_writable(va: usize) -> bool {
     let page_table = PageTable::from_token(current_user_token());
     if let Some(pte) = page_table.translate(VirtAddr::from(va).floor()) {
@@ -37,6 +38,7 @@ pub fn is_user_writable(va: usize) -> bool {
         false
     }
 }
+/// 将用户虚拟地址指针转换为内核可访问的物理地址指针
 pub fn translate_ptr<T>(ptr: *const T) -> *mut T {
     let page_table: PageTable = PageTable::from_token(current_user_token());
     let start: usize = ptr as usize;

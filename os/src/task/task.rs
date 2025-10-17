@@ -5,7 +5,8 @@ use crate::mm::{
     kernel_stack_position, MapPermission, MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE,
 };
 use crate::trap::{trap_handler, TrapContext};
-
+use crate::sync::UPSafeCell;
+use super::TASK_MANAGER;
 /// The task control block (TCB) of a task.
 pub struct TaskControlBlock {
     /// Save task context
@@ -28,8 +29,21 @@ pub struct TaskControlBlock {
 
     /// Program break
     pub program_brk: usize,
+    /// 内部同步数据
+    pub inner: UPSafeCell<TaskControlBlockInner>,
 }
 
+#[derive(Debug)]
+pub struct TaskControlBlockInner {
+    pub syscall_count: [usize; 512],
+}
+impl TaskControlBlockInner {
+    pub fn new() -> Self {
+        Self {
+            syscall_count: [0; 512],
+        }
+    }
+}
 impl TaskControlBlock {
     /// get the trap context
     pub fn get_trap_cx(&self) -> &'static mut TrapContext {
@@ -57,6 +71,7 @@ impl TaskControlBlock {
         );
         let task_control_block = Self {
             task_status,
+            inner: unsafe { UPSafeCell::new(TaskControlBlockInner::new()) },
             task_cx: TaskContext::goto_trap_return(kernel_stack_top),
             memory_set,
             trap_cx_ppn,
@@ -98,6 +113,16 @@ impl TaskControlBlock {
     }
 }
 
+/// 获取当前正在运行的任务的 ID
+pub fn current_task_id() -> usize {
+    TASK_MANAGER.inner.exclusive_access().current_task
+}
+/// 获取当前正在运行的任务的引用
+pub fn current_task() -> Option<&'static mut TaskControlBlock> {
+    let mut inner = TASK_MANAGER.inner.exclusive_access();
+    let id = inner.current_task;
+    Some(unsafe { &mut *(&mut inner.tasks[id] as *mut _) })
+}
 #[derive(Copy, Clone, PartialEq)]
 /// task status: UnInit, Ready, Running, Exited
 pub enum TaskStatus {
