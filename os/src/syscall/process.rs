@@ -1,7 +1,7 @@
 //! Process management syscalls
 use crate::task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, current_task_id, TASK_MANAGER};
 use crate::timer::get_time_us;
-use crate::mm::{is_user_writable, translate_ptr};
+use crate::mm::{is_user_writable, translate_ptr, is_user_readable};
 use crate::mm::MapPermission;
 use crate::mm::VirtAddr;
 use crate::task::TaskControlBlock;
@@ -52,7 +52,7 @@ pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
     trace!("kernel: sys_trace");
     match trace_request {
         0 => {
-            if !is_user_writable(id as usize) {
+            if !is_user_readable(id as usize) {
                 return -1;
             }
             let pid = translate_ptr(id as *const u8);
@@ -74,7 +74,6 @@ pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
             let task_id = current_task_id();
             let inner = TASK_MANAGER.inner.exclusive_access();
             let syscall_count = &mut inner.tasks[task_id].inner.exclusive_access().syscall_count;
-            println!("test:{}/n",syscall_count[id]);
             syscall_count[id] as isize
         }
         _ => -1,
@@ -96,6 +95,9 @@ pub fn sys_mmap(start: usize, len: usize, prot: usize) -> isize {
     if prot & !0b111 != 0 {
         return -1;
     }
+    if prot == 0 {
+        return -1;
+    }
     // 构造权限
     let mut perm = MapPermission::U;
     if prot & 0b001 != 0 { perm |= MapPermission::R; }
@@ -107,6 +109,7 @@ pub fn sys_mmap(start: usize, len: usize, prot: usize) -> isize {
     let memory_set = &mut task.memory_set;
     let start_vpn = VirtAddr::from(start).floor();
     let end_vpn = VirtAddr::from(end).ceil();
+    // 检查地址冲突
     for area in &memory_set.areas {
         if !(area.vpn_range.get_end() <= start_vpn || area.vpn_range.get_start() >= end_vpn) {
             return -1;
@@ -121,9 +124,26 @@ pub fn sys_mmap(start: usize, len: usize, prot: usize) -> isize {
 }
 
 // YOUR JOB: Implement munmap.
-pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    trace!("kernel: sys_munmap NOT IMPLEMENTED YET!");
-    -1
+pub fn sys_munmap(start: usize, len: usize) -> isize {
+    trace!("kernel: sys_munmap");
+    if len == 0 {
+        return -1;
+    }
+    // 检查起始地址页对齐
+    if start % crate::config::PAGE_SIZE != 0 {
+        return -1;
+    }
+    let end = start + len;
+    let task = match crate::task::current_task() {
+        Some(t) => t,
+        None => return -1,
+    };
+    let memory_set = &mut task.memory_set;
+    if memory_set.delete(VirtAddr::from(start), VirtAddr::from(end)) {
+        0
+    } else {
+        -1
+    }
 }
 /// change data segment size
 pub fn sys_sbrk(size: i32) -> isize {

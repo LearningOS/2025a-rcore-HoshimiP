@@ -71,6 +71,21 @@ impl MemorySet {
         }
         self.areas.push(map_area);
     }
+    /// 取消映射
+    pub fn delete(&mut self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        if let Some(index) = self
+            .areas
+            .iter()
+            .position(|area| VirtAddr::from(area.vpn_range.get_start()) == start_va
+                && VirtAddr::from(area.vpn_range.get_end()) == end_va)
+        {
+            let mut map_area = self.areas.remove(index);
+            map_area.unmap(&mut self.page_table);
+            true
+        } else {
+            false
+        }
+    }
     /// Mention that trampoline is not collected by areas.
     fn map_trampoline(&mut self) {
         self.page_table.map(
