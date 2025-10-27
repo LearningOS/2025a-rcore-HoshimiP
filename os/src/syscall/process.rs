@@ -143,12 +143,33 @@ pub fn sys_sbrk(size: i32) -> isize {
 
 /// YOUR JOB: Implement spawn.
 /// HINT: fork + exec =/= spawn
-pub fn sys_spawn(_path: *const u8) -> isize {
+pub fn sys_spawn(path: *const u8) -> isize {
     trace!(
-        "kernel:pid[{}] sys_spawn NOT IMPLEMENTED",
+        "kernel:pid[{}] sys_spawn",
         current_task().unwrap().pid.0
     );
-    -1
+    let token = current_user_token();
+    let path = translated_str(token, path);
+    if let Some(data) = get_app_data_by_name(path.as_str()) {
+        let new_task = Arc::new(crate::task::TaskControlBlock::new(data));
+        let parent = current_task().unwrap();
+    //建立连接
+        {
+            let mut child_inner = new_task.inner_exclusive_access();
+            child_inner.parent = Some(Arc::downgrade(&parent));
+        }
+
+        {
+            let mut parent_inner = parent.inner_exclusive_access();
+            parent_inner.children.push(new_task.clone());
+        }
+
+        let pid = new_task.pid.0;
+        add_task(new_task);
+        pid as isize
+    } else {
+        -1
+    }
 }
 
 // YOUR JOB: Set task priority.
