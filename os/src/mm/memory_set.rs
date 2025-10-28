@@ -33,7 +33,8 @@ lazy_static! {
 /// address space
 pub struct MemorySet {
     page_table: PageTable,
-    areas: Vec<MapArea>,
+    ///pub
+    pub areas: Vec<MapArea>,
 }
 
 impl MemorySet {
@@ -70,6 +71,21 @@ impl MemorySet {
         {
             area.unmap(&mut self.page_table);
             self.areas.remove(idx);
+        }
+    }
+    /// 取消映射
+    pub fn delete(&mut self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        if let Some(index) = self
+            .areas
+            .iter()
+            .position(|area| VirtAddr::from(area.vpn_range.get_start()) == start_va
+                && VirtAddr::from(area.vpn_range.get_end()) == end_va)
+        {
+            let mut map_area = self.areas.remove(index);
+            map_area.unmap(&mut self.page_table);
+            true
+        } else {
+            false
         }
     }
     /// Add a new MapArea into this MemorySet.
@@ -303,7 +319,7 @@ impl MemorySet {
 }
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {
-    vpn_range: VPNRange,
+    pub vpn_range: VPNRange,
     data_frames: BTreeMap<VirtPageNum, FrameTracker>,
     map_type: MapType,
     map_perm: MapPermission,
