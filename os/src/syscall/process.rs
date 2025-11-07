@@ -3,7 +3,7 @@
 use alloc::sync::Arc;
 
 use crate::{
-    loader::get_app_data_by_name,
+    //loader::get_app_data_by_name,
     fs::{open_file, OpenFlags},
     mm::{translated_refmut, translated_str, is_user_writable, translate_ptr, MapPermission, VirtAddr},
     task::{
@@ -221,26 +221,25 @@ pub fn sys_spawn(path: *const u8) -> isize {
     );
     let token = current_user_token();
     let path = translated_str(token, path);
-    if let Some(data) = get_app_data_by_name(path.as_str()) {
-        let new_task = Arc::new(crate::task::TaskControlBlock::new(data));
+    
+    if let Some(inode) = open_file(path.as_str(), OpenFlags::RDONLY) {
+        let data = inode.read_all();
+        let new_task = Arc::new(crate::task::TaskControlBlock::new(data.as_slice()));
         let parent = current_task().unwrap();
-        //建立连接
         {
             let mut child_inner = new_task.inner_exclusive_access();
             child_inner.parent = Some(Arc::downgrade(&parent));
         }
-
         {
             let mut parent_inner = parent.inner_exclusive_access();
             parent_inner.children.push(new_task.clone());
         }
-
         let pid = new_task.pid.0;
         add_task(new_task);
-        pid as isize
-    } else {
-        -1
-    } 
+        return pid as isize;
+    }
+
+    -1 
 }
 
 // YOUR JOB: Set task priority.
