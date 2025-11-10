@@ -8,9 +8,12 @@ use alloc::vec::Vec;
 use spin::{Mutex, MutexGuard};
 /// Virtual filesystem layer over easy-fs
 pub struct Inode {
-    block_id: usize,
-    block_offset: usize,
-    fs: Arc<Mutex<EasyFileSystem>>,
+    /// pub
+    pub block_id: usize,
+    /// pub
+    pub block_offset: usize,
+    /// pub
+    pub fs: Arc<Mutex<EasyFileSystem>>,
     block_device: Arc<dyn BlockDevice>,
 }
 
@@ -57,6 +60,19 @@ impl Inode {
             }
         }
         None
+    }
+    /// count linkat
+    pub fn count_link(&self, inode_id: u32) -> usize {
+        let inode_size = core::mem::size_of::<DiskInode>();
+        let file_count = inode_size / DIRENT_SZ;
+        let mut count = 0;
+        let mut dirent = DirEntry::empty();
+        for i in 0..file_count {
+            if dirent.inode_id() == inode_id {
+                count += 1;
+            }
+        }
+        count
     }
     /// Find inode under current inode by name
     pub fn find(&self, name: &str) -> Option<Arc<Inode>> {

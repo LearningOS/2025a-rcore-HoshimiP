@@ -159,4 +159,12 @@ impl File for OSInode {
         }
         total_write_size
     }
+    fn get_inode_number(&self) -> usize {
+        let inner = self.inner.exclusive_access();
+        let inode = inner.inode.clone();
+        let fs = inode.fs.lock();
+        let block_id = inode.block_id;
+        let block_offset = inode.block_offset;
+        fs.get_inode_id_by_pos(block_id as u32, block_offset).unwrap()
+    }
 }
