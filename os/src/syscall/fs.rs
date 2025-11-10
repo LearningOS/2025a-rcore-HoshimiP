@@ -1,5 +1,5 @@
 //! File and filesystem-related syscalls
-use crate::fs::{open_file, OpenFlags, Stat};
+use crate::fs::{open_file, OpenFlags, Stat, StatMode};
 use crate::mm::{UserBuffer, translated_byte_buffer, translated_refmut, translated_str,};
 use crate::task::{current_task, current_user_token};
 
@@ -98,6 +98,9 @@ pub fn sys_fstat(fd: usize, st: *mut Stat) -> isize {
         let link_count = root.count_link(inode_number as u32);
         let st_ref = translated_refmut(token, st);
         st_ref.nlink = link_count as u32;
+        st_ref.ino = inode_number as u64;
+        st_ref.mode = StatMode::FILE;
+        st_ref.dev = 0;
         0
     } else {
         -1
@@ -117,24 +120,30 @@ pub fn sys_linkat(old_name: *const u8, new_name: *const u8) -> isize {
     if old_path == new_path {
         return -1;
     }
-    if let Some(osinode) = open_file(old_path.as_str(), OpenFlags::RDONLY) {
-        let root = crate::fs::ROOT_INODE.clone();
-        let inode_id = root.get_inode_id(&old_path).unwrap();
-        let inner = osinode.inner.exclusive_access();
-        let inode = inner.inode.clone();
-        inode.link(new_path.as_str(), inode_id);
+    let root = crate::fs::ROOT_INODE.clone();
+    let inode_id = root.get_inode_id(&old_path).unwrap();
+    root.link(new_path.as_str(), inode_id);
         0
-    } else {
-        -1
     }
 
-}
-
 /// YOUR JOB: Implement unlinkat.
-pub fn sys_unlinkat(_name: *const u8) -> isize {
+pub fn sys_unlinkat(name: *const u8) -> isize {
     trace!(
         "kernel:pid[{}] sys_unlinkat",
         current_task().unwrap().pid.0
     );
-    -1
+    let token = current_user_token();
+    let path = translated_str(token, name);
+    let osinode = open_file(path.as_str(), OpenFlags::RDONLY).unwrap();
+    let inner = osinode.inner.exclusive_access();
+    let inode = inner.inode.clone();
+    drop(inner);
+    let root = crate::fs::ROOT_INODE.clone();
+    let inode_id = root.get_inode_id(path.as_str()).unwrap();
+    let link_count = root.count_link(inode_id);
+    root.unlink(path.as_str());
+    if link_count == 0 {
+        inode.clear();
+    }
+    0
 }

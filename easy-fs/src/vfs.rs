@@ -63,16 +63,23 @@ impl Inode {
     }
     /// count linkat
     pub fn count_link(&self, inode_id: u32) -> usize {
-        let inode_size = core::mem::size_of::<DiskInode>();
-        let file_count = inode_size / DIRENT_SZ;
-        let mut count = 0;
-        let mut dirent = DirEntry::empty();
-        for i in 0..file_count {
-            if dirent.inode_id() == inode_id {
-                count += 1;
+        let _fs = self.fs.lock();
+        self.read_disk_inode(|disk_inode| {
+            assert!(disk_inode.is_dir());
+            let file_count = (disk_inode.size as usize) / DIRENT_SZ;
+            let mut count = 0;
+            let mut dirent = DirEntry::empty();
+            for i in 0..file_count {
+                assert_eq!(
+                    disk_inode.read_at(i * DIRENT_SZ, dirent.as_bytes_mut(), &self.block_device),
+                    DIRENT_SZ,
+                );
+                if dirent.inode_id() == inode_id {
+                    count += 1;
+                }
             }
-        }
-        count
+            count
+        })
     }
     /// Find inode under current inode by name
     pub fn find(&self, name: &str) -> Option<Arc<Inode>> {
@@ -119,6 +126,33 @@ impl Inode {
             self.increase_size(new_size as u32, root_inode, &mut fs);
             let dirent = DirEntry::new(name, inode_id);
             root_inode.write_at(file_count * DIRENT_SZ, dirent.as_bytes(), &self.block_device);
+        });
+        Some(())
+    }
+    /// unlink
+    pub fn unlink(&self, name: &str) -> Option<()> {
+        let mut fs = self.fs.lock();
+        let found = self.modify_disk_inode(|root_inode| {
+            let file_count = (root_inode.size as usize) / DIRENT_SZ;
+            let mut dirent = DirEntry::empty();
+            let mut target_index: Option<usize> = None;
+            for i in 0..file_count {
+                assert_eq!(
+                    root_inode.read_at(i * DIRENT_SZ, dirent.as_bytes_mut(), &self.block_device,),
+                    DIRENT_SZ,
+                );
+                if dirent.name() == name {
+                    target_index = Some(i);
+                    break;
+                }
+            }
+            if let Some(idx) = target_index {
+                let empty = DirEntry::empty();
+                root_inode.write_at(idx * DIRENT_SZ, empty.as_bytes(), &self.block_device);
+                true
+            } else {
+                false
+            }
         });
         Some(())
     }
