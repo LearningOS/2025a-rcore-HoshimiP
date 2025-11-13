@@ -1,0 +1,123 @@
+   0.054499100s  INFO prepare_target{force=false package_id=os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os) target="os"}: cargo::core::compiler::fingerprint: fingerprint error for os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os)/Check { test: false }/TargetInner { name: "os", doc: true, ..: with_path("D:\\os_learning\\2025a-rcore-HoshimiP\\os\\src/main.rs", Edition2021) }
+   0.054535400s  INFO prepare_target{force=false package_id=os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os) target="os"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\os_learning\2025a-rcore-HoshimiP\os\target\riscv64gc-unknown-none-elf\debug\.fingerprint\os-3dc486f0ccff56ec\bin-os`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_path
+   6: git_filter_source_path
+   7: git_filter_source_path
+   8: git_filter_source_path
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: <unknown>
+  14: <unknown>
+  15: git_midx_writer_dump
+  16: git_filter_source_repo
+  17: git_midx_writer_dump
+  18: BaseThreadInitThunk
+  19: RtlUserThreadStart
+   0.061481200s  INFO prepare_target{force=false package_id=bitflags v1.3.2 target="bitflags"}: cargo::core::compiler::fingerprint: fingerprint dirty for bitflags v1.3.2/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("bitflags", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\bitflags-1.3.2\\src\\lib.rs", Edition2018) }
+   0.061506100s  INFO prepare_target{force=false package_id=bitflags v1.3.2 target="bitflags"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.061897600s  INFO prepare_target{force=false package_id=buddy_system_allocator v0.6.0 target="buddy_system_allocator"}: cargo::core::compiler::fingerprint: fingerprint dirty for buddy_system_allocator v0.6.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("buddy_system_allocator", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\buddy_system_allocator-0.6.0\\src\\lib.rs", Edition2018) }
+   0.061914700s  INFO prepare_target{force=false package_id=buddy_system_allocator v0.6.0 target="buddy_system_allocator"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.062222800s  INFO prepare_target{force=false package_id=spin v0.7.1 target="spin"}: cargo::core::compiler::fingerprint: fingerprint dirty for spin v0.7.1/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("spin", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\spin-0.7.1\\src\\lib.rs", Edition2015) }
+   0.062236500s  INFO prepare_target{force=false package_id=spin v0.7.1 target="spin"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.062505900s  INFO prepare_target{force=false package_id=lazy_static v1.5.0 target="lazy_static"}: cargo::core::compiler::fingerprint: fingerprint dirty for lazy_static v1.5.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("lazy_static", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\lazy_static-1.5.0\\src\\lib.rs", Edition2015) }
+   0.062518200s  INFO prepare_target{force=false package_id=lazy_static v1.5.0 target="lazy_static"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.062805900s  INFO prepare_target{force=false package_id=spin v0.9.8 target="spin"}: cargo::core::compiler::fingerprint: fingerprint dirty for spin v0.9.8/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("spin", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\spin-0.9.8\\src\\lib.rs", Edition2015) }
+   0.062824300s  INFO prepare_target{force=false package_id=spin v0.9.8 target="spin"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.063070600s  INFO prepare_target{force=false package_id=log v0.4.28 target="log"}: cargo::core::compiler::fingerprint: fingerprint dirty for log v0.4.28/Check { test: false }/TargetInner { ..: lib_target("log", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\log-0.4.28\\src/lib.rs", Edition2021) }
+   0.063082200s  INFO prepare_target{force=false package_id=log v0.4.28 target="log"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.063486300s  INFO prepare_target{force=false package_id=os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os) target="build-script-build"}: cargo::core::compiler::fingerprint: fingerprint error for os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os)/RunCustomBuild/TargetInner { ..: custom_build_target("build-script-build", "D:\\os_learning\\2025a-rcore-HoshimiP\\os\\build.rs", Edition2021) }
+   0.063501100s  INFO prepare_target{force=false package_id=os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os) target="build-script-build"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\os_learning\2025a-rcore-HoshimiP\os\target\riscv64gc-unknown-none-elf\debug\.fingerprint\os-47fc6682475603d1\run-build-script-build-script-build`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_path
+   6: git_filter_source_repo
+   7: git_filter_source_path
+   8: git_filter_source_path
+   9: git_filter_source_path
+  10: git_filter_source_path
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_filter_source_repo
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.063789100s  INFO prepare_target{force=false package_id=riscv v0.6.0 (https://github.com/rcore-os/riscv#11d43cf7) target="riscv"}: cargo::core::compiler::fingerprint: fingerprint dirty for riscv v0.6.0 (https://github.com/rcore-os/riscv#11d43cf7)/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("riscv", ["lib"], "C:\\Users\\Hoshi\\.cargo\\git\\checkouts\\riscv-ab2abd16c438337b\\11d43cf\\src\\lib.rs", Edition2015) }
+   0.063802300s  INFO prepare_target{force=false package_id=riscv v0.6.0 (https://github.com/rcore-os/riscv#11d43cf7) target="riscv"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.064110700s  INFO prepare_target{force=false package_id=bare-metal v0.2.5 target="bare_metal"}: cargo::core::compiler::fingerprint: fingerprint dirty for bare-metal v0.2.5/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("bare_metal", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\bare-metal-0.2.5\\src\\lib.rs", Edition2015) }
+   0.064123100s  INFO prepare_target{force=false package_id=bare-metal v0.2.5 target="bare_metal"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.064891400s  INFO prepare_target{force=false package_id=bit_field v0.10.3 target="bit_field"}: cargo::core::compiler::fingerprint: fingerprint dirty for bit_field v0.10.3/Check { test: false }/TargetInner { ..: lib_target("bit_field", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\bit_field-0.10.3\\src/lib.rs", Edition2015) }
+   0.064905900s  INFO prepare_target{force=false package_id=bit_field v0.10.3 target="bit_field"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.065889100s  INFO prepare_target{force=false package_id=xmas-elf v0.7.0 target="xmas_elf"}: cargo::core::compiler::fingerprint: fingerprint dirty for xmas-elf v0.7.0/Check { test: false }/TargetInner { ..: lib_target("xmas_elf", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\xmas-elf-0.7.0\\src\\lib.rs", Edition2015) }
+   0.065906800s  INFO prepare_target{force=false package_id=xmas-elf v0.7.0 target="xmas_elf"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+   0.066211700s  INFO prepare_target{force=false package_id=zero v0.1.3 target="zero"}: cargo::core::compiler::fingerprint: fingerprint dirty for zero v0.1.3/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("zero", ["lib"], "C:\\Users\\Hoshi\\.cargo\\registry\\src\\index.crates.io-6f17d22bba15001f\\zero-0.1.3\\src\\lib.rs", Edition2021) }
+   0.066226100s  INFO prepare_target{force=false package_id=zero v0.1.3 target="zero"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(Stale)
+    Checking spin v0.9.8
+    Checking bitflags v1.3.2
+    Checking bit_field v0.10.3
+    Checking zero v0.1.3
+    Checking log v0.4.28
+    Checking spin v0.7.1
+   Compiling os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os)
+    Checking bare-metal v0.2.5
+error: failed to run custom build command for `os v0.1.0 (D:\os_learning\2025a-rcore-HoshimiP\os)`
+
+Caused by:
+  process didn't exit successfully: `D:\os_learning\2025a-rcore-HoshimiP\os\target\debug\build\os-03785beed0437fc5\build-script-build` (exit code: 101)
+  --- stdout
+  cargo:rerun-if-changed=../user/src/
+  cargo:rerun-if-changed=../user/build/elf/
+
+  --- stderr
+  thread 'main' panicked at build.rs:18:10:
+  called `Result::unwrap()` on an `Err` value: Os { code: 3, kind: NotFound, message: "系统找不到指定的路径。" }
+  stack backtrace:
+     0: std::panicking::begin_panic_handler
+               at /rustc/c987ad527540e8f1565f57c31204bde33f63df76/library\std\src\panicking.rs:652
+     1: core::panicking::panic_fmt
+               at /rustc/c987ad527540e8f1565f57c31204bde33f63df76/library\core\src\panicking.rs:72
+     2: core::result::unwrap_failed
+               at /rustc/c987ad527540e8f1565f57c31204bde33f63df76/library\core\src\result.rs:1654
+     3: enum2$<core::result::Result<std::fs::ReadDir,std::io::error::Error> >::unwrap
+               at /rustc/c987ad527540e8f1565f57c31204bde33f63df76\library\core\src\result.rs:1077
+     4: build_script_build::insert_app_data
+               at .\build.rs:17
+     5: build_script_build::main
+               at .\build.rs:9
+     6: core::ops::function::FnOnce::call_once<void (*)(),tuple$<> >
+               at /rustc/c987ad527540e8f1565f57c31204bde33f63df76\library\core\src\ops\function.rs:250
+     7: core::hint::black_box
+               at /rustc/c987ad527540e8f1565f57c31204bde33f63df76\library\core\src\hint.rs:338
+  note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `zero` (lib) due to 2 previous errors
+error: could not compile `bare-metal` (lib) due to 2 previous errors
+error: could not compile `bit_field` (lib) due to 2 previous errors
+error: could not compile `log` (lib) due to 2 previous errors
+error: could not compile `bitflags` (lib) due to 2 previous errors
+error: could not compile `spin` (lib) due to 2 previous errors
+error: could not compile `spin` (lib) due to 2 previous errors
