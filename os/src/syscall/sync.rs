@@ -3,6 +3,7 @@ use crate::task::{block_current_and_run_next, current_process, current_task};
 use crate::timer::{add_timer, get_time_ms};
 use alloc::sync::Arc;
 use alloc::vec;
+use alloc::vec::Vec;
 /// sleep syscall
 pub fn sys_sleep(ms: usize) -> isize {
     trace!(
@@ -42,7 +43,14 @@ pub fn sys_mutex_create(blocking: bool) -> isize {
         Some(Arc::new(MutexBlocking::new()))
     };
     let mut process_inner = process.inner_exclusive_access();
-    if let Some(id) = process_inner
+    let tid = current_task()
+        .unwrap()
+        .inner_exclusive_access()
+        .res
+        .as_ref()
+        .unwrap()
+        .tid;
+    let id = if let Some(id) = process_inner
         .mutex_list
         .iter()
         .enumerate()
@@ -50,11 +58,33 @@ pub fn sys_mutex_create(blocking: bool) -> isize {
         .map(|(id, _)| id)
     {
         process_inner.mutex_list[id] = mutex;
-        id as isize
+        id
     } else {
         process_inner.mutex_list.push(mutex);
-        process_inner.mutex_list.len() as isize - 1
+        process_inner.mutex_list.len() - 1
+    };
+    while process_inner.allocation.len() <= tid {
+        process_inner
+            .allocation
+            .push(vec![Vec::new(), Vec::new()]);
+        process_inner
+            .need
+            .push(vec![Vec::new(), Vec::new()]);
     }
+    for i in 0..process_inner.allocation.len() {
+        if process_inner.allocation[i][0].len() <= id {
+            process_inner.allocation[i][0].resize(id + 1, 0);
+        }
+        if process_inner.need[i][0].len() <= id {
+            process_inner.need[i][0].resize(id + 1, 0);
+        }
+    }
+    if process_inner.available[0].len() <= id {
+        process_inner.available[0].resize(id + 1, 0);
+    }
+    process_inner.available[0][id] = 1;
+
+    id as isize
 }
 /// mutex lock syscall
 pub fn sys_mutex_lock(mutex_id: usize) -> isize {
@@ -70,8 +100,66 @@ pub fn sys_mutex_lock(mutex_id: usize) -> isize {
             .tid
     );
     let process = current_process();
-    let process_inner = process.inner_exclusive_access();
+    let mut process_inner = process.inner_exclusive_access();
     let mutex = Arc::clone(process_inner.mutex_list[mutex_id].as_ref().unwrap());
+    let tid = current_task()
+        .unwrap()
+        .inner_exclusive_access()
+        .res
+        .as_ref()
+        .unwrap()
+        .tid;
+    if process_inner.available[0][mutex_id] >= 1 {
+        process_inner.available[0][mutex_id] -= 1;
+        process_inner.allocation[tid][0][mutex_id] += 1;
+    } else {
+        process_inner.need[tid][0][mutex_id] += 1;
+        let mut work = process_inner.available[0].clone();
+        let mut finish = vec![false; process_inner.allocation.len()];
+        let n = process_inner.allocation.len();
+        let m = work.len();
+        loop {
+            let mut found = false;
+            for i in 0..n {
+                if finish[i] {
+                    continue;
+                }
+                let mut ok = true;
+                for j in 0..m {
+                    let need_ij = if j < process_inner.need[i][0].len() {
+                        process_inner.need[i][0][j]
+                    } else {
+                        0
+                    };
+                    if need_ij > work[j] {
+                        ok = false;
+                        break;
+                    }
+                }
+                if ok {
+                    for j in 0..m {
+                        let alloc_ij = if j < process_inner.allocation[i][0].len() {
+                            process_inner.allocation[i][0][j]
+                        } else {
+                            0
+                        };
+                        work[j] += alloc_ij;
+                    }
+                    finish[i] = true;
+                    found = true;
+                }
+            }
+            if !found {
+                break;
+            }
+        }
+        let safe = finish.iter().all(|&f| f);
+        if process_inner.deadlock_detect_enabled && !safe {
+            process_inner.need[tid][0][mutex_id] -= 1;
+            drop(process_inner);
+            return -0xdead;
+        }
+    }
     drop(process_inner);
     drop(process);
     mutex.lock();
@@ -91,8 +179,17 @@ pub fn sys_mutex_unlock(mutex_id: usize) -> isize {
             .tid
     );
     let process = current_process();
-    let process_inner = process.inner_exclusive_access();
+    let mut process_inner = process.inner_exclusive_access();
     let mutex = Arc::clone(process_inner.mutex_list[mutex_id].as_ref().unwrap());
+    let tid = current_task()
+        .unwrap()
+        .inner_exclusive_access()
+        .res
+        .as_ref()
+        .unwrap()
+        .tid;
+    process_inner.available[0][mutex_id] += 1;
+    process_inner.allocation[tid][0][mutex_id] -= 1;
     drop(process_inner);
     drop(process);
     mutex.unlock();
@@ -162,8 +259,17 @@ pub fn sys_semaphore_up(sem_id: usize) -> isize {
             .tid
     );
     let process = current_process();
-    let process_inner = process.inner_exclusive_access();
+    let mut process_inner = process.inner_exclusive_access();
     let sem = Arc::clone(process_inner.semaphore_list[sem_id].as_ref().unwrap());
+    let tid = current_task()
+        .unwrap()
+        .inner_exclusive_access()
+        .res
+        .as_ref()
+        .unwrap()
+        .tid;
+    process_inner.available[1][sem_id] += 1;
+    process_inner.allocation[tid][1][sem_id] -= 1;
     drop(process_inner);
     sem.up();
     0
@@ -196,89 +302,50 @@ pub fn sys_semaphore_down(sem_id: usize) -> isize {
         process_inner.allocation[tid][1][sem_id] += 1;
     } else {
         process_inner.need[tid][1][sem_id] += 1;
-        if process_inner.deadlock_detect_enabled {
-            // --- 更健壮的死锁检测：只考虑实际存在的线程（tasks 中为 Some） ---
-            let mut work = process_inner.available[1].clone();
-            let resource_n = work.len();
-            // 只按 tasks 的长度来遍历线程槽，避免 allocation/need 可能比 tasks 更长
-            let n_threads = process_inner.tasks.len();
-            let mut finish = vec![false; n_threads];
-
-            // 初始标记：不存在的线程槽视为已完成；真正存在但不需要资源的也视为已完成
-            for i in 0..n_threads {
-                if process_inner.tasks.get(i).and_then(|t| t.as_ref()).is_none() {
-                    // no such thread => treated as finished
-                    finish[i] = true;
+        let mut work = process_inner.available[1].clone();
+        let mut finish = vec![false; process_inner.allocation.len()];
+        let n = process_inner.allocation.len();
+        let m = work.len();
+        loop {
+            let mut found = false;
+            for i in 0..n {
+                if finish[i] {
                     continue;
                 }
-                let mut no_need = true;
-                for j in 0..resource_n {
-                    let need_ij = process_inner
-                        .need
-                        .get(i)
-                        .and_then(|per_type| per_type.get(1))
-                        .and_then(|vec_j| vec_j.get(j))
-                        .copied()
-                        .unwrap_or(0);
-                    if need_ij > 0 {
-                        no_need = false;
+                let mut ok = true;
+                for j in 0..m {
+                    let need_ij = if j < process_inner.need[i][1].len() {
+                        process_inner.need[i][1][j]
+                    } else {
+                        0
+                    };
+                    if need_ij > work[j] {
+                        ok = false;
                         break;
                     }
                 }
-                if no_need {
-                    finish[i] = true;
-                }
-            }
-
-            loop {
-                let mut found = false;
-                for i in 0..n_threads {
-                    if !finish[i] {
-                        // 检查 thread i 的 Need 是否都 <= Work
-                        let mut can_finish = true;
-                        for j in 0..resource_n {
-                            let need_ij = process_inner
-                                .need
-                                .get(i)
-                                .and_then(|per_type| per_type.get(1))
-                                .and_then(|vec_j| vec_j.get(j))
-                                .copied()
-                                .unwrap_or(0);
-                            if need_ij > work[j] {
-                                can_finish = false;
-                                break;
-                            }
-                        }
-                        if can_finish {
-                            // 线程 i 可以完成，释放它的 allocation 到 work（j 从 0 开始）
-                            for j in 0..resource_n {
-                                let alloc_ij = process_inner
-                                    .allocation
-                                    .get(i)
-                                    .and_then(|per_type| per_type.get(1))
-                                    .and_then(|vec_j| vec_j.get(j))
-                                    .copied()
-                                    .unwrap_or(0);
-                                work[j] = work[j].saturating_add(alloc_ij);
-                            }
-                            finish[i] = true;
-                            found = true;
-                        }
+                if ok {
+                    for j in 0..m {
+                        let alloc_ij = if j < process_inner.allocation[i][1].len() {
+                            process_inner.allocation[i][1][j]
+                        } else {
+                            0
+                        };
+                        work[j] += alloc_ij;
                     }
-                }
-                if !found {
-                    break;
+                    finish[i] = true;
+                    found = true;
                 }
             }
-
-            let deadlock = finish.iter().any(|&f| f == false);
-            if deadlock {
-                for (i, f) in finish.iter().enumerate() {
-                    println!("deadlock check finish[{}] = {}", i, f);
-                }
-                return -0xdead;
+            if !found {
+                break;
             }
-            // --- end ---
+        }
+        let safe = finish.iter().all(|&f| f);
+        if process_inner.deadlock_detect_enabled && !safe {
+            process_inner.need[tid][1][sem_id] -= 1;
+            drop(process_inner);
+            return -0xdead;
         }
     }
     drop(process_inner);
